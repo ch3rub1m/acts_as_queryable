@@ -1,8 +1,8 @@
 # ActsAsQueryable
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/acts_as_queryable`. To experiment with that code, run `bin/console` for an interactive prompt.
+A Rails plugin to add support of Query by url search params.
 
-TODO: Delete this and the text above, and describe your gem
+This gem can be used to Query records without any scope.
 
 ## Installation
 
@@ -16,13 +16,118 @@ And then execute:
 
     $ bundle
 
-Or install it yourself as:
-
-    $ gem install acts_as_queryable
-
 ## Usage
 
-TODO: Write usage instructions here
+### In your model:
+
+``` ruby
+class Brand < ActiveRecord::Base
+  acts_as_queryable
+
+  # ...
+end
+```
+
+Calling `query` with any attributes of the model will now get the filtered results:
+
+``` ruby
+>> Brand.all
+=> #<ActiveRecord::Relation [#<V1::Brand id: 1, name: "Apple">,
+                             #<V1::Brand id: 2, name: "Sony">,
+                             #<V1::Brand id: 3, name: "Nintendo">,
+                             #<V1::Brand id: 4, name: "Amazon">,
+                             #<V1::Brand id: 5, name: nil>]>
+
+>> Brand.query(name: 'Apple')
+=> #<ActiveRecord::Relation [#<V1::Brand id: 1, name: "Apple">]>
+```
+
+If the type of attribute is `string`, the Query will use `contains` method.
+
+``` ruby
+>> Brand.query(name: 'So')
+=> #<ActiveRecord::Relation [#<V1::Brand id: 2, name: "Sony">]>
+```
+
+#### Fetch the records that an attribute is NULL
+
+``` ruby
+>> Brand.query(name: 'NULL')
+=> #<ActiveRecord::Relation [#<V1::Brand id: 5, name: nil>]>
+```
+
+#### Numeric comparison
+
+If the type of attribute is `integer`, `float` or `datetime`, the Query will add numeric comparison support.
+
+``` ruby
+>> Brand.query(id_gt: 4)
+=> #<ActiveRecord::Relation [#<V1::Brand id: 5, name: nil>]>
+
+>> Brand.query(id_lt: 2)
+=> #<ActiveRecord::Relation [#<V1::Brand id: 1, name: "Apple">]>
+```
+
+#### Multiple fetch
+
+Multiple fetch is available by using a string split by comma(`,`) instead of a integer attribute.
+
+``` ruby
+>> Brand.query(id: '2,3')
+=> #<ActiveRecord::Relation [#<V1::Brand id: 2, name: "Sony">, #<V1::Brand id: 3, name: "Nintendo">]>
+```
+
+
+### In your controller:
+
+``` ruby
+class BrandsController < ApplicationController
+  def index
+    @brands = Brand.query(params)
+
+    # ...
+  end
+end
+```
+
+### Customize
+
+#### excpet
+
+If you don't want to use many attributes for Query , you can pass them as an option:
+
+``` ruby
+class Client < ActiveRecord::Base
+  acts_as_queryable except: [:name]
+
+  ...
+end
+```
+
+#### order
+
+If you want to open the `order` feature:
+
+``` ruby
+class Client < ActiveRecord::Base
+  acts_as_queryable order: true
+
+  ...
+end
+```
+
+Now you can fetch the records order by an attribute:
+
+`GET https://api.restful.com/v1/brands?order=id desc`
+
+``` ruby
+=> #<ActiveRecord::Relation [#<V1::Brand id: 5, name: nil>,
+                             #<V1::Brand id: 4, name: "Amazon">,
+                             #<V1::Brand id: 3, name: "Nintendo">,
+                             #<V1::Brand id: 2, name: "Sony">,
+                             #<V1::Brand id: 1, name: "Apple">]>
+```
+
 
 ## Development
 
@@ -32,10 +137,9 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/acts_as_queryable. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+Bug reports and pull requests are welcome on GitHub at https://github.com/ch3rub1m/acts_as_queryable. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
 
 ## License
 
 The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
-
