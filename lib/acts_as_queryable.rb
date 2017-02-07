@@ -30,7 +30,7 @@ module ActsAsQueryable
         when :integer
           sub_conditions = []
           value.split(',').each do |integer|
-            sub_conditions << "#{key} = #{integer}"
+            sub_conditions << "#{key} = ?"
             params << integer
           end
           conditions << "(#{sub_conditions.join(' OR ')})"
@@ -57,7 +57,7 @@ module ActsAsQueryable
         end
       end
       query = conditions.join(' AND ')
-      self.where(query, params).order(@order && query_params[:order])
+      self.where(query, *params).order(@order && query_params[:order])
     end
 
     private
